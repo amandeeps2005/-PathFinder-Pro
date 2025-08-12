@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PathFinder Pro - Gamified Algorithm Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-route"></i>
+                <h1>PathFinder Pro</h1>
+            </div>
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-tab="visualizer">
+                    <i class="fas fa-play"></i> Visualizer
+                </button>
+                <button class="nav-tab" data-tab="theory">
+                    <i class="fas fa-book"></i> Theory
+                </button>
+                <button class="nav-tab" data-tab="leaderboard">
+                    <i class="fas fa-trophy"></i> Leaderboard
+                </button>
+            </nav>
+            <div class="score-display">
+                <div class="score-item">
+                    <i class="fas fa-star"></i>
+                    <span id="score">0</span>
+                </div>
+                <div class="score-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="timer">00:00</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Visualizer Tab -->
+            <div class="tab-content active" id="visualizer-tab">
+                <div class="visualizer-container">
+                    <!-- Control Panel -->
+                    <div class="control-panel">
+                        <div class="control-group">
+                            <h3><i class="fas fa-cog"></i> Algorithm</h3>
+                            <select id="algorithm-select" class="control-select">
+                                <option value="dijkstra">Dijkstra's Algorithm</option>
+                                <option value="astar">A* Search</option>
+                                <option value="bfs">Breadth-First Search</option>
+                                <option value="dfs">Depth-First Search</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <h3><i class="fas fa-tachometer-alt"></i> Speed</h3>
+                            <input type="range" id="speed-slider" min="1" max="10" value="5" class="control-slider">
+                            <span id="speed-value">5x</span>
+                        </div>
+                        
+                        <div class="control-group">
+                            <h3><i class="fas fa-gamepad"></i> Game Mode</h3>
+                            <select id="game-mode" class="control-select">
+                                <option value="free">Free Play</option>
+                                <option value="challenge">Challenge Mode</option>
+                                <option value="maze">Maze Runner</option>
+                                <option value="race">Time Race</option>
+                            </select>
+                        </div>
+
+                        <div class="button-group">
+                            <button id="start-btn" class="btn btn-primary">
+                                <i class="fas fa-play"></i> Start
+                            </button>
+                            <button id="pause-btn" class="btn btn-secondary">
+                                <i class="fas fa-pause"></i> Pause
+                            </button>
+                            <button id="reset-btn" class="btn btn-danger">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                            <button id="generate-maze-btn" class="btn btn-success">
+                                <i class="fas fa-random"></i> Generate Maze
+                            </button>
+                        </div>
+
+                        <div class="stats-panel">
+                            <h3><i class="fas fa-chart-line"></i> Statistics</h3>
+                            <div class="stat-item">
+                                <span>Path Length:</span>
+                                <span id="path-length">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Nodes Visited:</span>
+                                <span id="nodes-visited">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Time Taken:</span>
+                                <span id="time-taken">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Efficiency:</span>
+                                <span id="efficiency">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grid Container -->
+                    <div class="grid-container">
+                        <div class="grid-header">
+                            <h2>Interactive Grid</h2>
+                            <div class="grid-legend">
+                                <div class="legend-item">
+                                    <div class="legend-color start"></div>
+                                    <span>Start</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color end"></div>
+                                    <span>End</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color wall"></div>
+                                    <span>Wall</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color visited"></div>
+                                    <span>Visited</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color path"></div>
+                                    <span>Path</span>
+                                </div>
+                            </div>
+                        </div>
+                        <canvas id="grid-canvas" width="800" height="600"></canvas>
+                        <div class="grid-instructions">
+                            <p><i class="fas fa-mouse-pointer"></i> Click to place start/end points or draw walls</p>
+                            <p><i class="fas fa-keyboard"></i> Press SPACE to start visualization</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theory Tab -->
+            <div class="tab-content" id="theory-tab">
+                <div class="theory-container">
+                    <div class="theory-sidebar">
+                        <h3>Algorithms</h3>
+                        <ul class="theory-nav">
+                            <li><a href="#dijkstra-theory" class="theory-link active">Dijkstra's Algorithm</a></li>
+                            <li><a href="#astar-theory" class="theory-link">A* Search</a></li>
+                            <li><a href="#bfs-theory" class="theory-link">Breadth-First Search</a></li>
+                            <li><a href="#dfs-theory" class="theory-link">Depth-First Search</a></li>
+                        </ul>
+                    </div>
+                    <div class="theory-content">
+                        <div class="theory-section active" id="dijkstra-theory">
+                            <h2>Dijkstra's Algorithm</h2>
+                            <div class="theory-card">
+                                <h3>Overview</h3>
+                                <p>Dijkstra's algorithm finds the shortest path between nodes in a graph with non-negative edge weights. It's a greedy algorithm that maintains a set of vertices whose shortest distance from the source is known.</p>
+                            </div>
+                            <div class="theory-card">
+                                <h3>How It Works</h3>
+                                <ol>
+                                    <li>Initialize distances to all vertices as infinite except source (0)</li>
+                                    <li>Create a priority queue with all vertices</li>
+                                    <li>While queue is not empty:
+                                        <ul>
+                                            <li>Extract vertex with minimum distance</li>
+                                            <li>Update distances of adjacent vertices</li>
+                                        </ul>
+                                    </li>
+                                </ol>
+                            </div>
+                            <div class="theory-card">
+                                <h3>Time Complexity</h3>
+                                <p><strong>O((V + E) log V)</strong> using a binary heap, where V is vertices and E is edges.</p>
+                            </div>
+                            <div class="theory-card">
+                                <h3>Use Cases</h3>
+                                <ul>
+                                    <li>GPS navigation systems</li>
+                                    <li>Network routing protocols</li>
+                                    <li>Social networking (shortest path between users)</li>
+                                    <li>Flight connections</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="theory-section" id="astar-theory">
+                            <h2>A* Search Algorithm</h2>
+                            <div class="theory-card">
+                                <h3>Overview</h3>
+                                <p>A* is an extension of Dijkstra's algorithm that uses heuristics to guide the search towards the goal more efficiently. It combines the actual cost from start (g) with a heuristic estimate to goal (h).</p>
+                            </div>
+                            <div class="theory-card">
+                                <h3>Formula</h3>
+                                <p><strong>f(n) = g(n) + h(n)</strong></p>
+                                <ul>
+                                    <li><strong>g(n):</strong> Actual cost from start to node n</li>
+                                    <li><strong>h(n):</strong> Heuristic estimate from n to goal</li>
+                                    <li><strong>f(n):</strong> Total estimated cost</li>
+                                </ul>
+                            </div>
+                            <div class="theory-card">
+                                <h3>Heuristics</h3>
+                                <ul>
+                                    <li><strong>Manhattan Distance:</strong> |x1-x2| + |y1-y2|</li>
+                                    <li><strong>Euclidean Distance:</strong> √[(x1-x2)² + (y1-y2)²]</li>
+                                    <li><strong>Chebyshev Distance:</strong> max(|x1-x2|, |y1-y2|)</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="theory-section" id="bfs-theory">
+                            <h2>Breadth-First Search (BFS)</h2>
+                            <div class="theory-card">
+                                <h3>Overview</h3>
+                                <p>BFS explores vertices level by level, visiting all neighbors before moving to the next level. It guarantees the shortest path in unweighted graphs.</p>
+                            </div>
+                            <div class="theory-card">
+                                <h3>Algorithm Steps</h3>
+                                <ol>
+                                    <li>Start with source vertex in queue</li>
+                                    <li>Mark source as visited</li>
+                                    <li>While queue is not empty:
+                                        <ul>
+                                            <li>Dequeue a vertex</li>
+                                            <li>Process all unvisited neighbors</li>
+                                            <li>Mark neighbors as visited and enqueue them</li>
+                                        </ul>
+                                    </li>
+                                </ol>
+                            </div>
+                            <div class="theory-card">
+                                <h3>Time & Space Complexity</h3>
+                                <p><strong>Time:</strong> O(V + E) | <strong>Space:</strong> O(V)</p>
+                            </div>
+                        </div>
+
+                        <div class="theory-section" id="dfs-theory">
+                            <h2>Depth-First Search (DFS)</h2>
+                            <div class="theory-card">
+                                <h3>Overview</h3>
+                                <p>DFS explores as far as possible along each branch before backtracking. It uses a stack (or recursion) to remember vertices to visit.</p>
+                            </div>
+                            <div class="theory-card">
+                                <h3>Algorithm Steps</h3>
+                                <ol>
+                                    <li>Start with source vertex on stack</li>
+                                    <li>While stack is not empty:
+                                        <ul>
+                                            <li>Pop a vertex from stack</li>
+                                            <li>If not visited, mark as visited</li>
+                                            <li>Push all unvisited neighbors to stack</li>
+                                        </ul>
+                                    </li>
+                                </ol>
+                            </div>
+                            <div class="theory-card">
+                                <h3>Applications</h3>
+                                <ul>
+                                    <li>Topological sorting</li>
+                                    <li>Cycle detection</li>
+                                    <li>Path finding in mazes</li>
+                                    <li>Connected components</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div class="tab-content" id="leaderboard-tab">
+                <div class="leaderboard-container">
+                    <h2><i class="fas fa-trophy"></i> Leaderboard</h2>
+                    <div class="leaderboard-filters">
+                        <button class="filter-btn active" data-filter="all">All Time</button>
+                        <button class="filter-btn" data-filter="dijkstra">Dijkstra</button>
+                        <button class="filter-btn" data-filter="astar">A*</button>
+                        <button class="filter-btn" data-filter="bfs">BFS</button>
+                    </div>
+                    <div class="leaderboard-list">
+                        <div class="leaderboard-item rank-1">
+                            <div class="rank">1</div>
+                            <div class="player-info">
+                                <div class="player-name">PathMaster</div>
+                                <div class="player-stats">Dijkstra • 15.2s • 98% efficiency</div>
+                            </div>
+                            <div class="score">2,450</div>
+                        </div>
+                        <div class="leaderboard-item rank-2">
+                            <div class="rank">2</div>
+                            <div class="player-info">
+                                <div class="player-name">AlgoNinja</div>
+                                <div class="player-stats">A* • 18.7s • 95% efficiency</div>
+                            </div>
+                            <div class="score">2,280</div>
+                        </div>
+                        <div class="leaderboard-item rank-3">
+                            <div class="rank">3</div>
+                            <div class="player-info">
+                                <div class="player-name">CodeWizard</div>
+                                <div class="player-stats">BFS • 22.1s • 92% efficiency</div>
+                            </div>
+                            <div class="score">2,150</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Particle Background -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Scripts -->
+    <script src="sounds.js"></script>
+    <script src="app.js"></script>
+    <script src="visualizer.js"></script>
+    <script src="particles.js"></script>
+</body>
+</html>
