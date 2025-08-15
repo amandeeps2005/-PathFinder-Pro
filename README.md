@@ -56,7 +56,7 @@ PathFinder Pro is an interactive, web-based application designed to visualize va
 └── visualizer.js      # Core logic for the grid, drawing, and algorithm execution.
 ```
 
-## 🏁 Getting Started
+## Getting Started
 
 No installation is needed! Since this is a vanilla HTML, CSS, and JavaScript project, you can run it by following these simple steps:
 
