@@ -2,18 +2,23 @@
 class SoundManager {
     constructor() {
         this.enabled = true;
-        this.volume = 0.3;
+        this.volume = 0.3; // Fixed volume
         this.sounds = {};
         this.audioContext = null;
+        this.masterGain = null;
         
         this.initializeAudioContext();
         this.createSounds();
-        this.setupVolumeControl();
     }
 
     initializeAudioContext() {
         try {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (this.audioContext) {
+                this.masterGain = this.audioContext.createGain();
+                this.masterGain.gain.setValueAtTime(this.volume, this.audioContext.currentTime);
+                this.masterGain.connect(this.audioContext.destination);
+            }
         } catch (error) {
             console.warn('Web Audio API not supported:', error);
         }
@@ -45,13 +50,14 @@ class SoundManager {
         const gainNode = this.audioContext.createGain();
 
         oscillator.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
+        gainNode.connect(this.masterGain);
 
         oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
         oscillator.type = waveType;
 
+        // Individual sound gain - masterGain will control the overall volume
         gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(this.volume, this.audioContext.currentTime + 0.01);
+        gainNode.gain.linearRampToValueAtTime(1.0, this.audioContext.currentTime + 0.01); // Full volume for the tone
         gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
 
         oscillator.start(this.audioContext.currentTime);
@@ -129,122 +135,9 @@ class SoundManager {
         }
     }
 
-    setVolume(volume) {
-        this.volume = Math.max(0, Math.min(1, volume));
-    }
-
     toggle() {
         this.enabled = !this.enabled;
         return this.enabled;
-    }
-
-    setupVolumeControl() {
-        // Add volume control to the UI
-        const volumeControl = document.createElement('div');
-        volumeControl.className = 'volume-control';
-        volumeControl.innerHTML = `
-            <div class="volume-slider-container">
-                <i class="fas fa-volume-up volume-icon"></i>
-                <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="${this.volume}" class="volume-slider">
-                <button id="mute-btn" class="mute-btn">
-                    <i class="fas fa-volume-up"></i>
-                </button>
-            </div>
-        `;
-
-        // Add styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .volume-control {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 1000;
-                background: rgba(0, 0, 0, 0.8);
-                backdrop-filter: blur(10px);
-                border: 1px solid #00d4ff;
-                border-radius: 25px;
-                padding: 0.5rem 1rem;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-            }
-
-            .volume-slider-container {
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-            }
-
-            .volume-icon {
-                color: #00d4ff;
-                font-size: 0.9rem;
-            }
-
-            .volume-slider {
-                width: 80px;
-                height: 4px;
-                background: linear-gradient(90deg, #ff6b6b, #00d4ff);
-                border-radius: 2px;
-                outline: none;
-                -webkit-appearance: none;
-            }
-
-            .volume-slider::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                width: 12px;
-                height: 12px;
-                background: #00d4ff;
-                border-radius: 50%;
-                cursor: pointer;
-                box-shadow: 0 0 5px rgba(0, 212, 255, 0.8);
-            }
-
-            .mute-btn {
-                background: transparent;
-                border: 1px solid #00d4ff;
-                color: #00d4ff;
-                padding: 0.3rem;
-                border-radius: 50%;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                width: 30px;
-                height: 30px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .mute-btn:hover {
-                background: #00d4ff;
-                color: #000;
-            }
-
-            .mute-btn.muted {
-                background: #ff6b6b;
-                border-color: #ff6b6b;
-                color: #fff;
-            }
-        `;
-        document.head.appendChild(style);
-        document.body.appendChild(volumeControl);
-
-        // Bind events
-        const volumeSlider = document.getElementById('volume-slider');
-        const muteBtn = document.getElementById('mute-btn');
-
-        volumeSlider.addEventListener('input', (e) => {
-            this.setVolume(parseFloat(e.target.value));
-            this.play('click'); // Test sound
-        });
-
-        muteBtn.addEventListener('click', () => {
-            const isEnabled = this.toggle();
-            muteBtn.classList.toggle('muted', !isEnabled);
-            muteBtn.innerHTML = isEnabled ? 
-                '<i class="fas fa-volume-up"></i>' : 
-                '<i class="fas fa-volume-mute"></i>';
-        });
     }
 
     // Method to play ambient background music
@@ -256,13 +149,13 @@ class SoundManager {
             const gainNode = this.audioContext.createGain();
 
             oscillator.connect(gainNode);
-            gainNode.connect(this.audioContext.destination);
+            gainNode.connect(this.masterGain);
 
             oscillator.frequency.setValueAtTime(frequency, startTime);
             oscillator.type = 'sine';
 
             gainNode.gain.setValueAtTime(0, startTime);
-            gainNode.gain.linearRampToValueAtTime(this.volume * 0.1, startTime + 0.1);
+            gainNode.gain.linearRampToValueAtTime(0.1, startTime + 0.1); // Ambient music is quieter
             gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
 
             oscillator.start(startTime);

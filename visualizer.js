@@ -293,6 +293,7 @@ class GridVisualizer {
             cancelAnimationFrame(this.animationId);
         }
         
+        this.clearWalls();
         this.clearVisualization();
         this.render();
     }
@@ -302,11 +303,11 @@ class GridVisualizer {
         this.pathNodes = [];
         this.currentStep = 0;
         
-        // Reset node states
+        // Reset node states from previous runs, but keep walls
         for (let row = 0; row < this.rows; row++) {
             for (let col = 0; col < this.cols; col++) {
                 const node = this.grid[row][col];
-                if (node.type !== 'wall' && node.type !== 'start' && node.type !== 'end') {
+                if (node.type === 'visited' || node.type === 'path' || node.type === 'current' || node.type === 'frontier') {
                     node.type = 'empty';
                 }
                 node.distance = Infinity;
@@ -320,18 +321,27 @@ class GridVisualizer {
         }
     }
 
+    clearWalls() {
+        for (let row = 0; row < this.rows; row++) {
+            for (let col = 0; col < this.cols; col++) {
+                const node = this.grid[row][col];
+                if (node.type === 'wall') {
+                    node.type = 'empty';
+                }
+            }
+        }
+    }
+
     async runAlgorithm() {
-        switch(this.currentAlgorithm) {
-            case 'dijkstra':
-                return await this.dijkstra();
-            case 'astar':
-                return await this.aStar();
-            case 'bfs':
-                return await this.bfs();
-            case 'dfs':
-                return await this.dfs();
-            default:
-                throw new Error('Unknown algorithm');
+        switch (this.currentAlgorithm) {
+            case 'dijkstra': return this.dijkstra();
+            case 'astar': return this.aStar();
+            case 'bfs': return this.bfs();
+            case 'dfs': return this.dfs();
+            case 'greedy-bfs': return this.greedyBestFirstSearch();
+            default: 
+                this.showComingSoon();
+                return Promise.resolve({ pathFound: false, path: [], visitedCount: 0 });
         }
     }
 
@@ -551,6 +561,67 @@ class GridVisualizer {
         };
     }
 
+    async greedyBestFirstSearch() {
+        const openSet = new PriorityQueue((a, b) => a.heuristic < b.heuristic);
+        const visited = [];
+
+        this.startNode.heuristic = this.heuristic(this.startNode, this.endNode);
+        openSet.push(this.startNode);
+
+        const openSetMap = new Map();
+        openSetMap.set(this.startNode, true);
+
+        while (!openSet.isEmpty()) {
+            await this.waitForResume();
+            const currentNode = openSet.pop();
+            openSetMap.delete(currentNode);
+
+            if (currentNode.visited) continue;
+
+            visited.push(currentNode);
+            currentNode.visited = true;
+
+            if (currentNode !== this.startNode && currentNode !== this.endNode) {
+                await this.animateNode(currentNode, 'visited');
+            }
+
+            if (currentNode === this.endNode) {
+                const path = this.reconstructPath(currentNode);
+                await this.animatePath(path);
+                return { pathLength: path.length, nodesVisited: visited.length, pathFound: true };
+            }
+
+            const neighbors = this.getNeighbors(currentNode);
+            for (const neighbor of neighbors) {
+                if (!neighbor.visited) {
+                    neighbor.parent = currentNode;
+                    neighbor.heuristic = this.heuristic(neighbor, this.endNode);
+                    
+                    if (!openSetMap.has(neighbor)) {
+                        openSet.push(neighbor);
+                        openSetMap.set(neighbor, true);
+                        if (neighbor !== this.endNode) {
+                            await this.animateNode(neighbor, 'frontier');
+                        }
+                    }
+                }
+            }
+        }
+
+        return { pathLength: 0, nodesVisited: visited.length, pathFound: false };
+    }
+
+
+
+    showComingSoon() {
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.fillRect(0, 0, this.width, this.height);
+        this.ctx.fillStyle = '#FFFFFF';
+        this.ctx.font = '30px "Orbitron", sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('Algorithm Coming Soon!', this.width / 2, this.height / 2);
+    }
+
     getNeighbors(node) {
         const neighbors = [];
         const directions = [
@@ -561,17 +632,17 @@ class GridVisualizer {
         for (const [dRow, dCol] of directions) {
             const newRow = node.row + dRow;
             const newCol = node.col + dCol;
-            
-            if (newRow >= 0 && newRow < this.rows && newCol >= 0 && newCol < this.cols) {
+
+            if (newRow >= 0 && newRow < this.rows && newCol >= 0 && newCol < this.cols && this.grid[newRow][newCol].type !== 'wall') {
                 const neighbor = this.grid[newRow][newCol];
-                
+
                 // Add weight for diagonal movement
                 if (Math.abs(dRow) + Math.abs(dCol) === 2) {
                     neighbor.weight = 1.414; // √2
                 } else {
                     neighbor.weight = 1;
                 }
-                
+
                 neighbors.push(neighbor);
             }
         }
@@ -960,19 +1031,20 @@ class GridVisualizer {
         // Create brick-like pattern
         const brickHeight = this.cellHeight / 3;
         const brickWidth = this.cellWidth / 2;
-        
+
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 2; j++) {
-                const brickX = x + j * brickWidth + (i % 2) * (brickWidth / 2);
+                const brickX = x + j * brickWidth + (i % 2 === 0 ? 0 : brickWidth / 2);
                 const brickY = y + i * brickHeight;
-                
-                // Brick color with slight variation
-                const brightness = 0.2 + Math.random() * 0.1;
+
+                // Deterministic brick color based on position
+                const seed = (i * 2 + j) ^ (Math.floor(x) * 73856093) ^ (Math.floor(y) * 19349663);
+                const brightness = 0.2 + ((seed & 0xFF) / 255) * 0.1;
                 this.ctx.fillStyle = `rgb(${brightness * 255}, ${brightness * 255}, ${brightness * 255})`;
-                
+
                 this.drawRoundedRect(brickX, brickY, brickWidth - 1, brickHeight - 1, 1);
                 this.ctx.fill();
-                
+
                 // Brick outline
                 this.ctx.strokeStyle = '#444';
                 this.ctx.lineWidth = 0.5;
